@@ -60,10 +60,18 @@ public class FlightControlsInput : MonoBehaviour
 
 
     [Header("Scoring")]
-    public CoordinationScoreManager scoreManager;
+    public CoordinationPerformanceScoreCalculation scoreManager;
 
     [Header("Ball Recovery")]
     public BallRecoveryTracker ballRecoveryTracker;
+
+
+    [Header("Input Sensitivity")]
+    [Range(0.1f, 2f)]
+    public float joystickSensitivity = 0.6f;
+
+    [Range(0.1f, 2f)]
+    public float rudderSensitivity = 0.6f;
 
     void Start()
     {
@@ -235,10 +243,18 @@ public class FlightControlsInput : MonoBehaviour
             // JOYSTICK → X
             // ------------------------------------
 
+            //float xRotation =
+            //    initialXRotation +
+            //    (joystickY * maxXRotation);
+
+
+            float joystickInput =
+                Mathf.Sign(joystickY) *
+                Mathf.Pow(Mathf.Abs(joystickY), joystickSensitivity);
+
             float xRotation =
                 initialXRotation +
-                (joystickY * maxXRotation);
-
+                (joystickInput * maxXRotation);
 
             // ------------------------------------
             // LEFT PEDAL
@@ -270,6 +286,14 @@ public class FlightControlsInput : MonoBehaviour
 
             float rightPedalAmount =
                 Mathf.InverseLerp(1f, -1f, rudderRX);
+
+            // Apply sensitivity
+            leftPedalAmount =
+                Mathf.Pow(leftPedalAmount, rudderSensitivity);
+
+            rightPedalAmount =
+                Mathf.Pow(rightPedalAmount, rudderSensitivity);
+
 
 
             // ------------------------------------
@@ -316,12 +340,17 @@ public class FlightControlsInput : MonoBehaviour
         );
 
 
-        // Tell recovery system that
-        // a NEW force has been applied.
-
+        // Start recovery measurement
         if (ballRecoveryTracker != null)
         {
             ballRecoveryTracker.ForceApplied();
+        }
+
+        // Tell the scoring system that
+        // a new disturbance occurred.
+        if (scoreManager != null)
+        {
+            scoreManager.RegisterDisturbance();
         }
     }
 
