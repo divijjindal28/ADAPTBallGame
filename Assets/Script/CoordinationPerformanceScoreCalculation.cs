@@ -1,6 +1,7 @@
-using UnityEngine;
-using TMPro;
 using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
 using XCharts.Runtime;
 
 
@@ -296,14 +297,20 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
     {
         if (chart != null)
         {
-            chart.Init();
-            chart.ClearData();
+            //chart.Init();
+            //chart.ClearData();
         }
         if (recoveryTimeChart != null)
         {
-            recoveryTimeChart.Init();
-            recoveryTimeChart.ClearData();
+            //recoveryTimeChart.Init();
+            //recoveryTimeChart.ClearData();
         }
+        if (overallScoreTrendChart != null)
+        {
+            //overallScoreTrendChart.Init();
+            //overallScoreTrendChart.ClearData();
+        }
+
         StartTest();
     }
 
@@ -1181,7 +1188,23 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
 
             graphTimes.Add(elapsedTime);
             graphDistances.Add(distance);
+
+            if (chart != null)
+            {
+                chart.AddXAxisData(
+                    elapsedTime.ToString("F0")
+                );
+
+                chart.AddData(
+                    0,
+                    distance
+                );
+
+            }
+
         }
+
+        
     }
     // ============================================================
     // CREATE GRAPH DATA DIST-TIME
@@ -1338,6 +1361,19 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         overallScoreTrendScores.Add(
             OverallCoordinationScore
         );
+
+        if (overallScoreTrendChart != null)
+        {
+            overallScoreTrendChart.AddXAxisData(
+                elapsedTime.ToString("F0")
+            );
+
+            overallScoreTrendChart.AddData(
+                0,
+                OverallCoordinationScore
+            );
+
+        }
 
         Debug.Log(
             $"Overall Score Recorded | " +
@@ -1714,9 +1750,9 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         // --------------------------------
 
         UpdateResultDisplay();
-        CreateDistanceGraph();
-        CreateRecoveryTimeGraph();
-        CreateOverallScoreTrendGraph();
+        //CreateDistanceGraph();
+        //CreateRecoveryTimeGraph();
+        //CreateOverallScoreTrendGraph();
         // --------------------------------
         // Final debug
         // --------------------------------

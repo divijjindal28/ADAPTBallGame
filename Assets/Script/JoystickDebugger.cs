@@ -73,18 +73,151 @@ public class FlightControlsInput : MonoBehaviour
     [Range(0.1f, 2f)]
     public float rudderSensitivity = 0.6f;
 
+
     void Start()
     {
+        // ============================================================
+        // RESET TIME SCALE
+        // Important if the previous scene was paused
+        // ============================================================
 
-        countdownTime = testDurationMinutes * 60f;
+        Time.timeScale = 1f;
 
-        if (countdownText != null)
+
+        // ============================================================
+        // LOAD SETTINGS FROM GAME SETTINGS MANAGER
+        // ============================================================
+
+        if (GameSettingsManager.Instance != null)
         {
-            countdownText.text = FormatCountdown(countdownTime);
+            // --------------------------------------------------------
+            // JOYSTICK SENSITIVITY
+            // --------------------------------------------------------
+
+            joystickSensitivity =
+                GameSettingsManager.Instance.joystickSensitivity;
+
+
+            // --------------------------------------------------------
+            // RUDDER SENSITIVITY
+            // --------------------------------------------------------
+
+            rudderSensitivity =
+                GameSettingsManager.Instance.rudderSensitivity;
+
+
+            // --------------------------------------------------------
+            // TEST DURATION
+            // --------------------------------------------------------
+
+            testDurationMinutes =
+                Mathf.RoundToInt(
+                    GameSettingsManager.Instance.GetTestDuration() / 60f
+                );
+
+
+            // ========================================================
+            // DISTURBANCE
+            // Controls HOW OFTEN force is applied
+            // ========================================================
+
+            switch (GameSettingsManager.Instance.disturbanceLevel)
+            {
+                case 0: // Low
+                    forceInterval = 10f;
+                    break;
+
+                case 1: // Medium
+                    forceInterval = 7f;
+                    break;
+
+                case 2: // High
+                    forceInterval = 5f;
+                    break;
+
+                default:
+                    forceInterval = 10f;
+                    break;
+            }
+
+
+            // ========================================================
+            // TURBULENCE
+            // Controls HOW STRONG the force is
+            // ========================================================
+
+            switch (GameSettingsManager.Instance.turbulenceLevel)
+            {
+                case 0: // Low
+                    maxForce = 1f;
+                    break;
+
+                case 1: // Medium
+                    maxForce = 1.5f;
+                    break;
+
+                case 2: // High
+                    maxForce = 2f;
+                    break;
+
+                default:
+                    maxForce = 1f;
+                    break;
+            }
+
+
+            // ========================================================
+            // DEBUG
+            // ========================================================
+
+            Debug.Log("===== GAME SETTINGS LOADED =====");
+
+            Debug.Log(
+                "Joystick Sensitivity: " +
+                joystickSensitivity
+            );
+
+            Debug.Log(
+                "Rudder Sensitivity: " +
+                rudderSensitivity
+            );
+
+            Debug.Log(
+                "Force Interval: " +
+                forceInterval + " seconds"
+            );
+
+            Debug.Log(
+                "Maximum Force: " +
+                maxForce
+            );
+
+            Debug.Log(
+                "Test Duration: " +
+                testDurationMinutes + " minutes"
+            );
         }
 
 
-        // Find controllers
+        // ============================================================
+        // SET COUNTDOWN TIME
+        // ============================================================
+
+        countdownTime =
+            testDurationMinutes * 60f;
+
+
+        if (countdownText != null)
+        {
+            countdownText.text =
+                FormatCountdown(countdownTime);
+        }
+
+
+        // ============================================================
+        // FIND CONTROLLERS
+        // ============================================================
+
         foreach (var joystick in Joystick.all)
         {
             if (joystick.displayName.Contains("T.16000"))
@@ -98,13 +231,28 @@ public class FlightControlsInput : MonoBehaviour
             }
         }
 
-        // Store starting rotation
+
+        // ============================================================
+        // STORE INITIAL PLATE ROTATION
+        // ============================================================
+
         if (plate != null)
         {
-            initialXRotation = plate.localEulerAngles.x;
-            initialZRotation = plate.localEulerAngles.z;
+            initialXRotation =
+                plate.localEulerAngles.x;
+
+            initialZRotation =
+                plate.localEulerAngles.z;
         }
+
+
+        // ============================================================
+        // RESET FORCE TIMER
+        // ============================================================
+
+        forceTimer = 0f;
     }
+   
 
     void Update()
     {
@@ -121,7 +269,7 @@ public class FlightControlsInput : MonoBehaviour
             {
                 countdownTime = 0f;
                 countdownFinished = true;
-                finalScore.SetActive(true);
+                finalScore.GetComponent<CanvasGroup>().alpha = 1f;
                 if (scoreManager != null)
                 {
                     scoreManager.EndTest();
