@@ -73,7 +73,13 @@ public class FlightControlsInput : MonoBehaviour
     [Range(0.1f, 2f)]
     public float rudderSensitivity = 0.6f;
 
+    [Header("Plate Rotation Control")]
 
+    [Tooltip("Rotation difference below this value will be applied instantly.")]
+    public float instantRotationThreshold = 2f;
+
+    [Tooltip("Speed used when the plate needs to make a large rotation.")]
+    public float largeRotationSpeed = 180f;
     void Start()
     {
         // ============================================================
@@ -387,87 +393,124 @@ public class FlightControlsInput : MonoBehaviour
 
         if (plate != null)
         {
-            // ------------------------------------
-            // JOYSTICK → X
-            // ------------------------------------
-
-            //float xRotation =
-            //    initialXRotation +
-            //    (joystickY * maxXRotation);
-
+            // ============================================================
+            // JOYSTICK INPUT WITH SENSITIVITY
+            // ============================================================
 
             float joystickInput =
                 Mathf.Sign(joystickY) *
-                Mathf.Pow(Mathf.Abs(joystickY), joystickSensitivity);
+                Mathf.Pow(
+                    Mathf.Abs(joystickY),
+                    joystickSensitivity
+                );
 
             float xRotation =
                 initialXRotation +
                 (joystickInput * maxXRotation);
 
-            // ------------------------------------
+
+            // ============================================================
             // LEFT PEDAL
-            //
-            // RY:
-            // Released = -1
-            // Pressed  = +1
-            //
-            // Convert:
-            // -1 → 0
-            // +1 → 1
-            // ------------------------------------
+            // ============================================================
 
             float leftPedalAmount =
                 Mathf.InverseLerp(-1f, 1f, rudderRY);
 
+            leftPedalAmount =
+                Mathf.Pow(
+                    leftPedalAmount,
+                    rudderSensitivity
+                );
 
-            // ------------------------------------
+
+            // ============================================================
             // RIGHT PEDAL
-            //
-            // RX:
-            // Released = +1
-            // Pressed  = -1
-            //
-            // Convert:
-            // +1 → 0
-            // -1 → 1
-            // ------------------------------------
+            // ============================================================
 
             float rightPedalAmount =
                 Mathf.InverseLerp(1f, -1f, rudderRX);
 
-            // Apply sensitivity
-            leftPedalAmount =
-                Mathf.Pow(leftPedalAmount, rudderSensitivity);
-
             rightPedalAmount =
-                Mathf.Pow(rightPedalAmount, rudderSensitivity);
+                Mathf.Pow(
+                    rightPedalAmount,
+                    rudderSensitivity
+                );
 
 
-
-            // ------------------------------------
-            // Z ROTATION
-            //
-            // Right → positive Z
-            // Left  → negative Z
-            // ------------------------------------
+            // ============================================================
+            // CALCULATE Z ROTATION
+            // ============================================================
 
             float zRotation =
                 initialZRotation +
                 (rightPedalAmount * maxZRotation) -
                 (leftPedalAmount * maxZRotation);
 
-            leftPedalText.text = leftPedalAmount.ToString("F2");
-            rightPedalText.text = rightPedalAmount.ToString("F2");
-            // ------------------------------------
-            // APPLY ROTATION
-            // ------------------------------------
 
-            Vector3 rotation = plate.localEulerAngles;
+            // ============================================================
+            // UPDATE DISPLAY
+            // ============================================================
 
-            rotation.x = xRotation;
-            rotation.z = -zRotation;
+            if (leftPedalText != null)
+                leftPedalText.text =
+                    leftPedalAmount.ToString("F2");
 
-            plate.localEulerAngles = rotation;
+            if (rightPedalText != null)
+                rightPedalText.text =
+                    rightPedalAmount.ToString("F2");
+
+
+            // ============================================================
+            // CREATE TARGET ROTATION
+            // ============================================================
+
+            Vector3 targetEulerRotation =
+                new Vector3(
+                    xRotation,
+                    plate.localEulerAngles.y,
+                    -zRotation
+                );
+
+            Quaternion targetRotation =
+                Quaternion.Euler(targetEulerRotation);
+
+
+            // ============================================================
+            // CHECK HOW BIG THE ROTATION CHANGE IS
+            // ============================================================
+
+            float rotationDifference =
+                Quaternion.Angle(
+                    plate.localRotation,
+                    targetRotation
+                );
+
+
+            // ============================================================
+            // SMALL CHANGE → INSTANT
+            // LARGE CHANGE → SMOOTH
+            // ============================================================
+
+            if (rotationDifference <= instantRotationThreshold)
+            {
+                // Small correction:
+                // Immediate response, no noticeable delay.
+
+                plate.localRotation =
+                    targetRotation;
+            }
+            else
+            {
+                // Large movement:
+                // Rotate smoothly instead of jumping.
+
+                plate.localRotation =
+                    Quaternion.RotateTowards(
+                        plate.localRotation,
+                        targetRotation,
+                        largeRotationSpeed * Time.deltaTime
+                    );
+            }
         }
     }
 

@@ -32,6 +32,11 @@ public class BallRecoveryTracker : MonoBehaviour
     private Coroutine hideTextCoroutine;
 
 
+    [Header("Recovery Settings")]
+    public float maximumRecoveryTime = 10f;
+
+    public System.Action<float, bool> OnRecoveryCompleted;
+
     // ========================================
     // UPDATE
     // ========================================
@@ -56,7 +61,7 @@ public class BallRecoveryTracker : MonoBehaviour
 
 
         // ========================================
-        // BALL HAS LEFT CENTER
+        // WAIT FOR BALL TO LEAVE CENTER
         // ========================================
 
         if (!ballHasLeftCenter)
@@ -79,17 +84,62 @@ public class BallRecoveryTracker : MonoBehaviour
 
 
         // ========================================
-        // BALL RETURNED TO CENTER
+        // SUCCESS
         // ========================================
 
         if (distance <= centerRadius)
         {
-            float finalRecoveryTime = recoveryTimer;
+            CompleteRecovery(
+                recoveryTimer,
+                true
+            );
 
-            recoveryActive = false;
-            ballHasLeftCenter = false;
+            return;
+        }
 
-            ShowRecoveryResult(finalRecoveryTime);
+
+        // ========================================
+        // FAILED — TOOK MORE THAN MAXIMUM TIME
+        // ========================================
+
+        if (recoveryTimer >= maximumRecoveryTime)
+        {
+            CompleteRecovery(
+                maximumRecoveryTime,
+                false
+            );
+        }
+    }
+
+
+    // ========================================
+    // COMPLETE RECOVERY
+    // ========================================
+
+    void CompleteRecovery(
+        float recoveryTime,
+        bool successful
+    )
+    {
+        recoveryActive = false;
+        ballHasLeftCenter = false;
+
+
+        // Send result to other scripts
+        OnRecoveryCompleted?.Invoke(
+            recoveryTime,
+            successful
+        );
+
+
+        // Show UI result
+        if (successful)
+        {
+            ShowRecoveryResult(recoveryTime);
+        }
+        else
+        {
+            ShowRecoveryFailedResult();
         }
     }
 
@@ -100,14 +150,25 @@ public class BallRecoveryTracker : MonoBehaviour
 
     public void ForceApplied()
     {
-        // Cancel previous recovery
-        // if another force is applied.
+        // If previous disturbance is still active,
+        // mark it as failed before starting a new one.
+
+        if (recoveryActive)
+        {
+            CompleteRecovery(
+                maximumRecoveryTime,
+                false
+            );
+        }
+
+
+        // Start new disturbance
 
         recoveryActive = true;
         ballHasLeftCenter = false;
         recoveryTimer = 0f;
 
-        Debug.Log("NEW FORCE APPLIED → Recovery timer started.");
+        Debug.Log("NEW FORCE APPLIED → Recovery tracking started.");
     }
 
 
@@ -160,6 +221,30 @@ public class BallRecoveryTracker : MonoBehaviour
     }
 
 
+    void ShowRecoveryFailedResult()
+    {
+        if (recoveryText == null)
+            return;
+
+        recoveryText.text =
+            $"Recovery Failed ({maximumRecoveryTime:F0} seconds)";
+
+        recoveryText.color = Color.red;
+
+        recoveryText.gameObject.SetActive(true);
+
+
+        if (hideTextCoroutine != null)
+        {
+            StopCoroutine(hideTextCoroutine);
+        }
+
+        hideTextCoroutine =
+            StartCoroutine(HideRecoveryText());
+    }
+
+
+
     // ========================================
     // HIDE TEXT
     // ========================================
@@ -173,5 +258,16 @@ public class BallRecoveryTracker : MonoBehaviour
             recoveryText.text = "";
             recoveryText.gameObject.SetActive(false);
         }
+    }
+
+    public void ForceFinishRecovery()
+    {
+        if (!recoveryActive)
+            return;
+
+        CompleteRecovery(
+            maximumRecoveryTime,
+            false
+        );
     }
 }
