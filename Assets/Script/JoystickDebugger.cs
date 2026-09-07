@@ -73,6 +73,11 @@ public class FlightControlsInput : MonoBehaviour
     [Range(0.1f, 2f)]
     public float rudderSensitivity = 0.6f;
 
+    [Header("Ball Sensitivity")]
+    [Range(0f, 1f)]
+    public float ballSensitivity = 0.05f;
+    public Rigidbody ballRigidbodyForSensitivity;
+
     [Header("Plate Rotation Control")]
 
     [Tooltip("Rotation difference below this value will be applied instantly.")]
@@ -113,6 +118,20 @@ public class FlightControlsInput : MonoBehaviour
             rudderSensitivity =
                 GameSettingsManager.Instance.rudderSensitivity;
 
+          
+
+            // --------------------------------------------------------
+            // BALL SENSITIVITY
+            // --------------------------------------------------------
+
+            ballSensitivity =
+                GameSettingsManager.Instance.ballSensitivity;
+
+            if(ballRigidbodyForSensitivity != null)
+            {
+                ballRigidbodyForSensitivity.linearDamping = ballSensitivity;
+                ballRigidbodyForSensitivity.angularDamping = ballSensitivity;
+            }
 
             // --------------------------------------------------------
             // TEST DURATION

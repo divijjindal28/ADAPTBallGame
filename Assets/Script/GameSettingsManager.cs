@@ -12,6 +12,9 @@ public class GameSettingsManager : MonoBehaviour
     [Range(0.1f, 2f)]
     public float rudderSensitivity = 0.6f;
 
+    [Range(0f, 1f)]
+    public float ballSensitivity = 0.05f;
+
 
     [Header("Turbulence")]
 
@@ -95,6 +98,22 @@ public class GameSettingsManager : MonoBehaviour
             "SET RUDDER SENSITIVITY = " +
             rudderSensitivity
         );
+    }
+
+    // ============================================================
+    // BALL SENSITIVITY
+    // ============================================================
+
+    public void SetBallSensitivity(float value)
+    {
+        ballSensitivity = value;
+
+        Debug.Log(
+            "SET BALL SENSITIVITY = " +
+            ballSensitivity
+        );
+
+        PrintCurrentSettings();
     }
 
 
@@ -186,6 +205,9 @@ public class GameSettingsManager : MonoBehaviour
 
             "Rudder Sensitivity: " +
             rudderSensitivity + "\n" +
+
+            "Ball Sensitivity: " +
+            ballSensitivity + "\n" +
 
             "Turbulence Level: " +
             turbulenceLevel + "\n" +
