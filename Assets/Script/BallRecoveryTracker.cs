@@ -36,6 +36,7 @@ public class BallRecoveryTracker : MonoBehaviour
     public float maximumRecoveryTime = 10f;
 
     public System.Action<float, bool> OnRecoveryCompleted;
+    public System.Action OnDisturbanceStarted;
 
     // ========================================
     // UPDATE
@@ -150,8 +151,8 @@ public class BallRecoveryTracker : MonoBehaviour
 
     public void ForceApplied()
     {
-        // If previous disturbance is still active,
-        // mark it as failed before starting a new one.
+        // If a previous disturbance is still active,
+        // finish it as failed first.
 
         if (recoveryActive)
         {
@@ -162,13 +163,23 @@ public class BallRecoveryTracker : MonoBehaviour
         }
 
 
-        // Start new disturbance
+        // Start new recovery tracking
 
         recoveryActive = true;
+
         ballHasLeftCenter = false;
+
         recoveryTimer = 0f;
 
-        Debug.Log("NEW FORCE APPLIED → Recovery tracking started.");
+
+        // Tell other systems that a new disturbance started
+
+        OnDisturbanceStarted?.Invoke();
+
+
+        Debug.Log(
+            "NEW FORCE APPLIED → Recovery tracking started."
+        );
     }
 
 

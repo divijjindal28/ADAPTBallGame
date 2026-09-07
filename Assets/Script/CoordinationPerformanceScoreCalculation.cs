@@ -98,10 +98,6 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
     private int positionSampleCount;
     private float timeInsideTarget;
 
-    private bool disturbanceActive;
-    private float disturbanceTimer;
-    private float currentDisturbanceMaximumDeviation;
-
     private float totalRecoveryTime;
     private float totalPostDisturbanceDeviation;
 
@@ -140,6 +136,14 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
     public float OverallCoordinationScore { get; private set; }
     public float LearningScore { get; private set; }
 
+    // ============================================================
+    // POST-DISTURBANCE DEVIATION TRACKING
+    // ============================================================
+
+    private bool deviationTrackingActive = false;
+
+    private float currentDisturbanceMaximumDeviation = 0f;
+
     void Start()
     {
         if (GameSettingsManager.Instance != null)
@@ -151,6 +155,8 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         {
             ballRecoveryTracker.OnRecoveryCompleted +=
                 HandleRecoveryCompleted;
+            ballRecoveryTracker.OnDisturbanceStarted +=
+                StartDisturbanceDeviationTracking;
         }
 
         StartTest();
@@ -169,14 +175,11 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         elapsedTime += deltaTime;
 
         float distance = CalculateDistanceFromCentre();
+        TrackPostDisturbanceDeviation(distance);
 
         RecordGraphData(distance);
-        RecordPositionMeasurement(distance, deltaTime);
 
-        UpdateDisturbanceTracking(
-            distance,
-            deltaTime
-        );
+        RecordPositionMeasurement(distance, deltaTime);
 
         UpdateLearningBlock(
             CalculateInstantAccuracy(distance),
@@ -206,6 +209,42 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         }
     }
 
+    // ============================================================
+    // TRACK POST-DISTURBANCE MAXIMUM DEVIATION
+    // ============================================================
+
+    void TrackPostDisturbanceDeviation(
+        float distance
+    )
+    {
+        if (!deviationTrackingActive)
+            return;
+
+
+        if (distance >
+            currentDisturbanceMaximumDeviation)
+        {
+            currentDisturbanceMaximumDeviation =
+                distance;
+        }
+    }
+
+
+    // ============================================================
+    // START DISTURBANCE DEVIATION TRACKING
+    // ============================================================
+
+    void StartDisturbanceDeviationTracking()
+    {
+        deviationTrackingActive = true;
+
+        currentDisturbanceMaximumDeviation = 0f;
+    }
+
+
+    // ============================================================
+    // RECEIVE RECOVERY RESULT
+    // ============================================================
 
     // ============================================================
     // RECEIVE RECOVERY RESULT
@@ -216,13 +255,25 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         bool successful
     )
     {
-        // Increase disturbance number
+        // Stop deviation tracking
+
+        deviationTrackingActive = false;
+
+
+        // Get next disturbance number
 
         int disturbanceNumber =
-            disturbanceNumbers.Count + 1;
+            totalDisturbances + 1;
 
 
-        // Store graph data
+        // Count this disturbance
+
+        totalDisturbances++;
+
+        completedDisturbances++;
+
+
+        // Store recovery result
 
         disturbanceNumbers.Add(
             disturbanceNumber
@@ -233,10 +284,13 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         );
 
 
-        // Update scoring data
+        // Store maximum deviation
 
-        totalDisturbances++;
+        totalPostDisturbanceDeviation +=
+            currentDisturbanceMaximumDeviation;
 
+
+        // Count successful recoveries
 
         if (successful)
         {
@@ -244,16 +298,32 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         }
 
 
-        totalRecoveryTime += recoveryTime;
+        // Add recovery time
+
+        totalRecoveryTime +=
+            recoveryTime;
+
+
+        // Record graph
+
+        RecordRecoveryGraphData(
+            disturbanceNumber,
+            recoveryTime
+        );
 
 
         Debug.Log(
             $"Disturbance {disturbanceNumber} | " +
             $"Recovery: {recoveryTime:F2}s | " +
-            $"Success: {successful}"
+            $"Success: {successful} | " +
+            $"Max Deviation: " +
+            $"{currentDisturbanceMaximumDeviation:F3}"
         );
 
-        RecordRecoveryGraphData(disturbanceNumber, recoveryTime);
+
+        // Reset for safety
+
+        currentDisturbanceMaximumDeviation = 0f;
     }
 
     float CalculateDistanceFromCentre()
@@ -390,79 +460,7 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
             (TimeOnTarget * timeOnTargetWeight);
     }
 
-    void UpdateDisturbanceTracking(
-        float distance,
-        float deltaTime)
-    {
-        if (!disturbanceActive)
-            return;
 
-        disturbanceTimer += deltaTime;
-
-        if (distance > currentDisturbanceMaximumDeviation)
-        {
-            currentDisturbanceMaximumDeviation = distance;
-        }
-
-        if (disturbanceTimer >= maxRecoveryTime)
-        {
-            CompleteRecovery(false);
-            return;
-        }
-
-        if (distance <= centreRadius)
-        {
-            CompleteRecovery(true);
-        }
-    }
-
-    public void RegisterDisturbance()
-    {
-        if (disturbanceActive)
-        {
-            CompleteRecovery(false);
-        }
-
-        disturbanceActive = true;
-        disturbanceTimer = 0f;
-        currentDisturbanceMaximumDeviation = 0f;
-
-        totalDisturbances++;
-    }
-
-    void CompleteRecovery(bool recoveredSuccessfully)
-    {
-        if (!disturbanceActive)
-            return;
-
-        float completedRecoveryTime;
-
-        if (recoveredSuccessfully)
-        {
-            completedRecoveryTime = disturbanceTimer;
-            successfulRecoveries++;
-        }
-        else
-        {
-            completedRecoveryTime = maxRecoveryTime;
-        }
-
-        totalRecoveryTime += completedRecoveryTime;
-
-        totalPostDisturbanceDeviation +=
-            currentDisturbanceMaximumDeviation;
-
-        completedDisturbances++;
-
-        RecordRecoveryGraphData(
-            completedDisturbances,
-            completedRecoveryTime
-        );
-
-        disturbanceActive = false;
-        disturbanceTimer = 0f;
-        currentDisturbanceMaximumDeviation = 0f;
-    }
 
     // FIXED:
     // Average across every completed disturbance.
@@ -472,9 +470,8 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         if (completedDisturbances == 0)
             return 0f;
 
-        return
-            totalRecoveryTime /
-            completedDisturbances;
+        return totalRecoveryTime /
+               completedDisturbances;
     }
 
     float CalculateRecoverySuccessRate()
@@ -678,27 +675,31 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         }
     }
 
-  
 
-    void RecordRecoveryGraphData(
-        int disturbanceNumber,
-        float recoveryTime)
-    {
-        disturbanceNumbers.Add(disturbanceNumber);
-        recoveryTimes.Add(recoveryTime);
 
-        if (recoveryTimeChart != null)
-        {
-            recoveryTimeChart.AddXAxisData(
-                "D" + disturbanceNumber
-            );
+    // ============================================================
+// RECORD RECOVERY GRAPH DATA
+// ============================================================
 
-            recoveryTimeChart.AddData(
-                0,
-                recoveryTime
-            );
-        }
-    }
+void RecordRecoveryGraphData(
+    int disturbanceNumber,
+    float recoveryTime
+)
+{
+    if (recoveryTimeChart == null)
+        return;
+
+
+    recoveryTimeChart.AddXAxisData(
+        "D" + disturbanceNumber
+    );
+
+
+    recoveryTimeChart.AddData(
+        0,
+        recoveryTime
+    );
+}
 
 
     void RecordOverallScoreTrendData()
@@ -804,8 +805,7 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
         positionSampleCount = 0;
         timeInsideTarget = 0f;
 
-        disturbanceActive = false;
-        disturbanceTimer = 0f;
+       
         currentDisturbanceMaximumDeviation = 0f;
 
         totalRecoveryTime = 0f;
@@ -860,10 +860,7 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
 
         // If a disturbance is still active when the test ends,
         // count it as an unsuccessful recovery.
-        if (disturbanceActive)
-        {
-            CompleteRecovery(false);
-        }
+        
 
         MeanError = CalculateMeanError();
         RMSE = CalculateRMSE();

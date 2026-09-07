@@ -80,6 +80,8 @@ public class FlightControlsInput : MonoBehaviour
 
     [Tooltip("Speed used when the plate needs to make a large rotation.")]
     public float largeRotationSpeed = 180f;
+
+    private Joystick a320Copilot;
     void Start()
     {
         // ============================================================
@@ -220,22 +222,48 @@ public class FlightControlsInput : MonoBehaviour
         }
 
 
+        foreach (var joystick in Joystick.all)
+        {
+            Debug.Log(
+                "FlightControlsInput : JOYSTICK FOUND: " +
+                joystick.displayName
+            );
+        }
+
         // ============================================================
         // FIND CONTROLLERS
         // ============================================================
 
+       
+
         foreach (var joystick in Joystick.all)
         {
+            Debug.Log(
+                "JOYSTICK FOUND: " +
+                joystick.displayName
+            );
+
             if (joystick.displayName.Contains("T.16000"))
             {
                 joystickT16000 = joystick;
             }
 
-            if (joystick.displayName.Contains("TCA"))
+            if (joystick.displayName.Contains("TCA Q-Eng"))
             {
                 rudderTCA = joystick;
             }
+
+            if (joystick.displayName.Contains("T.A320 Copilot"))
+            {
+                a320Copilot = joystick;
+
+                Debug.Log(
+                    "T.A320 COPILOT ASSIGNED!"
+                );
+            }
         }
+
+       
 
 
         // ============================================================
@@ -258,10 +286,36 @@ public class FlightControlsInput : MonoBehaviour
 
         forceTimer = 0f;
     }
-   
+
+    void DebugA320Inputs()
+    {
+        if (a320Copilot == null)
+            return;
+
+        foreach (var control in a320Copilot.allControls)
+        {
+            if (control is AxisControl axis)
+            {
+                float value = axis.ReadValue();
+
+                if (Mathf.Abs(value) > 0.01f)
+                {
+                    Debug.Log(
+                        "A320 AXIS MOVING → " +
+                        control.name +
+                        " = " +
+                        value
+                    );
+                }
+            }
+        }
+    }
 
     void Update()
     {
+
+        //DebugA320Inputs();
+
 
         // ========================================
         // COUNTDOWN TIMER
@@ -340,11 +394,18 @@ public class FlightControlsInput : MonoBehaviour
         {
             joystickY = joystickT16000.stick.y.ReadValue();
         }
+        if (a320Copilot != null)
+        {
+            joystickY = a320Copilot.stick.y.ReadValue();
+        }
 
         if (invertJoystick)
         {
             joystickY = -joystickY;
         }
+
+        
+
 
 
         // ========================================
@@ -537,12 +598,6 @@ public class FlightControlsInput : MonoBehaviour
             ballRecoveryTracker.ForceApplied();
         }
 
-        // Tell the scoring system that
-        // a new disturbance occurred.
-        if (scoreManager != null)
-        {
-            scoreManager.RegisterDisturbance();
-        }
     }
 
     string FormatCountdown(float time)
