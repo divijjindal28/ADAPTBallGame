@@ -21169,9 +21169,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0347ea0c94d1aa44b9763a138799d6ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JoystickDebugger
-  joystickYText: {fileID: 2073598679}
-  leftPedalText: {fileID: 1165218991}
-  rightPedalText: {fileID: 1880974621}
   finalScore: {fileID: 1331515205}
   plate: {fileID: 68687118}
   maxXRotation: 15
@@ -21179,19 +21176,21 @@ MonoBehaviour:
   maxZRotation: 15
   timerText: {fileID: 1661553952}
   ball: {fileID: 725548401}
-  fallHeight: -3
   enableRandomForce: 1
   ballRigidbody: {fileID: 725548405}
   forceInterval: 10
-  maxForce: 1.2
+  maxForce: 1
+  forceSignMagnitudeThreshhold: 0.5
   countdownText: {fileID: 679679142}
   testDurationMinutes: 2
   scoreManager: {fileID: 1194763096}
   ballRecoveryTracker: {fileID: 1194763095}
+  maxJoystickSenstivity: 2
+  maxRudderSensitivity: 2
   joystickSensitivity: 0.6
   rudderSensitivity: 0.6
+  maxBallSensitivity: 2
   ballSensitivity: 0.05
-  ballRigidbodyForSensitivity: {fileID: 725548405}
   instantRotationThreshold: 2.5
   largeRotationSpeed: 90
 --- !u!4 &1194763093
@@ -21279,7 +21278,7 @@ MonoBehaviour:
   maxRecoveryTime: 10
   recoveryTimeChart: {fileID: 770716229}
   overallScoreTrendChart: {fileID: 736184496}
-  overallScoreSampleInterval: 10
+  overallScoreSampleInterval: 5
 --- !u!1 &1199669383
 GameObject:
   m_ObjectHideFlags: 0
@@ -27771,7 +27770,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1661553951
 RectTransform:
   m_ObjectHideFlags: 0
@@ -34033,7 +34032,7 @@ Transform:
   m_GameObject: {fileID: 6746989025135433053}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0.002}
+  m_LocalPosition: {x: 0, y: 2.66, z: 0.002}
   m_LocalScale: {x: 49.3, y: 49.3, z: 416.104}
   m_ConstrainProportionsScale: 1
   m_Children: []

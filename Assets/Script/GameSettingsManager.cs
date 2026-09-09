@@ -4,17 +4,17 @@ public class GameSettingsManager : MonoBehaviour
 {
     public static GameSettingsManager Instance;
 
+
     [Header("Sensitivity Settings")]
 
-    [Range(0.1f, 2f)]
-    public float joystickSensitivity = 0.6f;
+    [Range(1, 5)]
+    public float joystickSensitivityLevel = 1;
 
-    [Range(0.1f, 2f)]
-    public float rudderSensitivity = 0.6f;
+    [Range(1, 5)]
+    public float rudderSensitivityLevel = 1;
 
-    [Range(0f, 1f)]
-    public float ballSensitivity = 0.05f;
-
+    [Range(1, 5)]
+    public float ballSensitivityLevel = 1;
 
     [Header("Turbulence")]
 
@@ -50,15 +50,19 @@ public class GameSettingsManager : MonoBehaviour
 
             DontDestroyOnLoad(gameObject);
 
-            Debug.Log("GameSettingsManager created and preserved.");
+            Debug.Log("GameSettingsManagerInstanceCheck GameSettingsManager created and preserved.");
         }
         else
         {
+            GameObject existingManager = Instance.gameObject;
             Debug.LogWarning(
-                "DUPLICATE GameSettingsManager FOUND! Destroying this one."
+                "GameSettingsManagerInstanceCheck DUPLICATE GameSettingsManager FOUND! Destroying this one."
             );
 
-            Destroy(gameObject);
+            Destroy(existingManager);
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
     }
 
@@ -75,14 +79,30 @@ public class GameSettingsManager : MonoBehaviour
     // JOYSTICK
     // ============================================================
 
-    public void SetJoystickSensitivity(float value)
-    {
-        joystickSensitivity = value;
+    //public void SetJoystickSensitivity(float value)
+    //{
+    //    joystickSensitivity = value;
 
-        Debug.Log(
-            "SET JOYSTICK SENSITIVITY = " +
-            joystickSensitivity
-        );
+    //    Debug.Log(
+    //        "SET JOYSTICK SENSITIVITY = " +
+    //        joystickSensitivity
+    //    );
+    //}
+
+    public void SetJoystickSensitivityLevel(int level)
+    {
+        //level = Mathf.Clamp(level, 1, 5);
+
+        //float percentage = level / 5f;
+
+        //joystickSensitivity = percentage * maxJoystickSenstivity;
+
+        //Debug.Log(
+        //    "GameSettingsManagerSenstivityText Joystick Level: " + level +
+        //    " | Value: " + joystickSensitivity
+        //);
+
+        joystickSensitivityLevel = level;
     }
 
 
@@ -90,32 +110,64 @@ public class GameSettingsManager : MonoBehaviour
     // RUDDER
     // ============================================================
 
-    public void SetRudderSensitivity(float value)
-    {
-        rudderSensitivity = value;
+    //public void SetRudderSensitivity(float value)
+    //{
+    //    rudderSensitivity = value;
 
-        Debug.Log(
-            "SET RUDDER SENSITIVITY = " +
-            rudderSensitivity
-        );
+    //    Debug.Log(
+    //        "SET RUDDER SENSITIVITY = " +
+    //        rudderSensitivity
+    //    );
+    //}
+
+    public void SetRudderSensitivityLevel(int level)
+    {
+        //level = Mathf.Clamp(level, 1, 5);
+
+        //float percentage = level / 5f;
+
+        //rudderSensitivity = percentage * maxRudderSentivity;
+
+        //Debug.Log(
+        //    "GameSettingsManagerSenstivityText Rudder Level: " + level +
+        //    " | Value: " + rudderSensitivity
+        //);
+
+       rudderSensitivityLevel = level;
     }
 
     // ============================================================
     // BALL SENSITIVITY
     // ============================================================
 
-    public void SetBallSensitivity(float value)
+    //public void SetBallSensitivity(float value)
+    //{
+    //    ballSensitivity = value;
+
+    //    Debug.Log(
+    //        "SET BALL SENSITIVITY = " +
+    //        ballSensitivity
+    //    );
+
+    //    PrintCurrentSettings();
+    //}
+
+
+    public void SetBallSensitivityLevel(int level)
     {
-        ballSensitivity = value;
+        //level = Mathf.Clamp(level, 1, 5);
 
-        Debug.Log(
-            "SET BALL SENSITIVITY = " +
-            ballSensitivity
-        );
+        //float percentage = level / 5f;
 
-        PrintCurrentSettings();
+        //ballSensitivity = percentage * maxBallSenstivity;
+        //ballSensitivity = maxBallSenstivity - ballSensitivity;
+
+        //Debug.Log(
+        //    "GameSettingsManagerSenstivityText Ball Level: " + level +
+        //    " | Value: " + ballSensitivity
+        //);
+        ballSensitivityLevel = level;
     }
-
 
     // ============================================================
     // TURBULENCE
@@ -201,13 +253,13 @@ public class GameSettingsManager : MonoBehaviour
             "===== CURRENT SETTINGS =====\n" +
 
             "Joystick Sensitivity: " +
-            joystickSensitivity + "\n" +
+            joystickSensitivityLevel + "\n" +
 
             "Rudder Sensitivity: " +
-            rudderSensitivity + "\n" +
+            rudderSensitivityLevel + "\n" +
 
             "Ball Sensitivity: " +
-            ballSensitivity + "\n" +
+            ballSensitivityLevel + "\n" +
 
             "Turbulence Level: " +
             turbulenceLevel + "\n" +

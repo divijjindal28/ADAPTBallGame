@@ -2,16 +2,19 @@
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using TMPro;
+using Unity.Hierarchy;
 
 public class FlightControlsInput : MonoBehaviour
 {
+    [Header("Hardwares")]
     private Joystick joystickT16000;
     private Joystick rudderTCA;
+    private Joystick a320Copilot;
 
-    [Header("Input Display")]
-    public TMP_Text joystickYText;
-    public TMP_Text leftPedalText;
-    public TMP_Text rightPedalText;
+    //[Header("Input Display")]
+    //public TMP_Text joystickYText;
+    //public TMP_Text leftPedalText;
+    //public TMP_Text rightPedalText;
 
     [Header("Final Scrore Display")]
     public GameObject finalScore;
@@ -38,7 +41,7 @@ public class FlightControlsInput : MonoBehaviour
 
     [Header("Ball")]
     public Transform ball;
-    public float fallHeight = -1f;
+    //public float fallHeight = -1f;
 
     private bool timerRunning = true;
 
@@ -48,6 +51,8 @@ public class FlightControlsInput : MonoBehaviour
     public Rigidbody ballRigidbody;
     public float forceInterval = 10f;
     public float maxForce = 5f;
+    [Range(0f, 1f)]
+    public float forceSignMagnitudeThreshhold = 0.5f;
 
     private float forceTimer = 0f;
 
@@ -67,6 +72,12 @@ public class FlightControlsInput : MonoBehaviour
 
 
     [Header("Input Sensitivity")]
+    [Range(0f, 2f)]
+    public float maxJoystickSenstivity = 2f;
+
+    [Range(0f, 2f)]
+    public float maxRudderSensitivity = 2f;
+
     [Range(0.1f, 2f)]
     public float joystickSensitivity = 0.6f;
 
@@ -74,9 +85,11 @@ public class FlightControlsInput : MonoBehaviour
     public float rudderSensitivity = 0.6f;
 
     [Header("Ball Sensitivity")]
+    [Range(0f, 2f)]
+    public float maxBallSensitivity = 2f;
+
     [Range(0f, 1f)]
     public float ballSensitivity = 0.05f;
-    public Rigidbody ballRigidbodyForSensitivity;
 
     [Header("Plate Rotation Control")]
 
@@ -86,7 +99,7 @@ public class FlightControlsInput : MonoBehaviour
     [Tooltip("Speed used when the plate needs to make a large rotation.")]
     public float largeRotationSpeed = 180f;
 
-    private Joystick a320Copilot;
+    
     void Start()
     {
         // ============================================================
@@ -107,30 +120,50 @@ public class FlightControlsInput : MonoBehaviour
             // JOYSTICK SENSITIVITY
             // --------------------------------------------------------
 
-            joystickSensitivity =
-                GameSettingsManager.Instance.joystickSensitivity;
+            float joystickSensitivityLevel =
+                GameSettingsManager.Instance.joystickSensitivityLevel;
+
+            joystickSensitivityLevel = Mathf.Clamp(joystickSensitivityLevel, 1, 5);
+
+            float percentage = joystickSensitivityLevel / 5f;
+
+            joystickSensitivity = percentage * maxJoystickSenstivity;
+
+
 
 
             // --------------------------------------------------------
             // RUDDER SENSITIVITY
             // --------------------------------------------------------
+            float rudderSentivityLevel =
+                GameSettingsManager.Instance.rudderSensitivityLevel;
 
-            rudderSensitivity =
-                GameSettingsManager.Instance.rudderSensitivity;
+            rudderSentivityLevel = Mathf.Clamp(rudderSentivityLevel, 1, 5);
 
-          
+            float rudderSentivityPercentage = rudderSentivityLevel / 5f;
+
+            rudderSensitivity = rudderSentivityPercentage * maxRudderSensitivity;
+
+
 
             // --------------------------------------------------------
             // BALL SENSITIVITY
             // --------------------------------------------------------
 
-            ballSensitivity =
-                GameSettingsManager.Instance.ballSensitivity;
+            float ballSentivityLevel =
+                GameSettingsManager.Instance.ballSensitivityLevel;
 
-            if(ballRigidbodyForSensitivity != null)
+            ballSentivityLevel = Mathf.Clamp(ballSentivityLevel, 1, 5);
+
+            float ballSentivitypercentage = ballSentivityLevel / 5f;
+
+            ballSensitivity = ballSentivitypercentage * maxBallSensitivity;
+            ballSensitivity = maxBallSensitivity - ballSensitivity;
+
+            if (ballRigidbody != null)
             {
-                ballRigidbodyForSensitivity.linearDamping = ballSensitivity;
-                ballRigidbodyForSensitivity.angularDamping = ballSensitivity;
+                ballRigidbody.linearDamping = ballSensitivity;
+                ballRigidbody.angularDamping = ballSensitivity;
             }
 
             // --------------------------------------------------------
@@ -166,31 +199,67 @@ public class FlightControlsInput : MonoBehaviour
                     forceInterval = 10f;
                     break;
             }
-
+            ballRecoveryTracker.setMaximumRecoveryTime(forceInterval);
+            scoreManager.setMaximumRecoveryTime(forceInterval);
 
             // ========================================================
             // TURBULENCE
             // Controls HOW STRONG the force is
             // ========================================================
 
+            float baseForce;
+            float maximumForceForTurbulence;
+
             switch (GameSettingsManager.Instance.turbulenceLevel)
             {
                 case 0: // Low
-                    maxForce = 1f;
+
+                    baseForce = 1f;
+                    maximumForceForTurbulence = 2.5f;
+
                     break;
+
 
                 case 1: // Medium
-                    maxForce = 1.5f;
+
+                    baseForce = 1.5f;
+                    maximumForceForTurbulence = 3f;
+
                     break;
+
 
                 case 2: // High
-                    maxForce = 2f;
+
+                    baseForce = 2f;
+                    maximumForceForTurbulence = 3.5f;
+
                     break;
 
+
                 default:
-                    maxForce = 1f;
+
+                    baseForce = 1f;
+                    maximumForceForTurbulence = 4f;
+
                     break;
             }
+
+
+            // Normalize Ball Sensitivity
+            // 0.0 = no increase
+            // 1.6 = maximum increase
+
+            float normalizedBallSensitivity =
+                Mathf.Clamp01(ballSensitivity / 1.6f);
+
+
+            // Move from base force toward the appropriate maximum force
+
+            maxForce = Mathf.Lerp(
+                baseForce,
+                maximumForceForTurbulence,
+                normalizedBallSensitivity
+            );
 
 
             // ========================================================
@@ -399,10 +468,7 @@ public class FlightControlsInput : MonoBehaviour
             }
         }
 
-        if (ball != null && ball.position.y < fallHeight)
-        {
-            timerRunning = false;
-        }
+       
         // ========================================
         // JOYSTICK Y
         // ========================================
@@ -457,14 +523,14 @@ public class FlightControlsInput : MonoBehaviour
         // DISPLAY RAW VALUES
         // ========================================
 
-        if (joystickYText != null)
-            joystickYText.text = joystickY.ToString("F2");
+        //if (joystickYText != null)
+        //    joystickYText.text = joystickY.ToString("F2");
 
-        if (leftPedalText != null)
-            leftPedalText.text = rudderRY.ToString("F2");
+        //if (leftPedalText != null)
+        //    leftPedalText.text = rudderRY.ToString("F2");
 
-        if (rightPedalText != null)
-            rightPedalText.text = rudderRX.ToString("F2");
+        //if (rightPedalText != null)
+        //    rightPedalText.text = rudderRX.ToString("F2");
 
 
         // ========================================
@@ -531,13 +597,13 @@ public class FlightControlsInput : MonoBehaviour
             // UPDATE DISPLAY
             // ============================================================
 
-            if (leftPedalText != null)
-                leftPedalText.text =
-                    leftPedalAmount.ToString("F2");
+            //if (leftPedalText != null)
+            //    leftPedalText.text =
+            //        leftPedalAmount.ToString("F2");
 
-            if (rightPedalText != null)
-                rightPedalText.text =
-                    rightPedalAmount.ToString("F2");
+            //if (rightPedalText != null)
+            //    rightPedalText.text =
+            //        rightPedalAmount.ToString("F2");
 
 
             // ============================================================
@@ -599,8 +665,19 @@ public class FlightControlsInput : MonoBehaviour
         if (!enableRandomForce || ballRigidbody == null)
             return;
 
-        float forceX = Random.Range(-maxForce, maxForce);
-        float forceZ = Random.Range(-maxForce, maxForce);
+
+        float signX = Random.value < forceSignMagnitudeThreshhold ? -1f : 1f;
+        float signZ = Random.value < forceSignMagnitudeThreshhold ? -1f : 1f;
+
+        float forceX =
+            signX *
+            Mathf.Sqrt(Random.value) *
+            maxForce;
+
+        float forceZ =
+            signZ *
+            Mathf.Sqrt(Random.value) *
+            maxForce;
 
         Vector3 randomForce =
             new Vector3(forceX, 0f, forceZ);
@@ -626,6 +703,6 @@ public class FlightControlsInput : MonoBehaviour
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
 
-        return $"{minutes:00}:{seconds:00}";
+        return $"{totalSeconds}";
     }
 }

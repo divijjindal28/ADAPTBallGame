@@ -42,6 +42,11 @@ public class BallRecoveryTracker : MonoBehaviour
     // UPDATE
     // ========================================
 
+    public void setMaximumRecoveryTime(float time)
+    {
+        maximumRecoveryTime = time;
+    }
+
     void Update()
     {
         if (!recoveryActive)

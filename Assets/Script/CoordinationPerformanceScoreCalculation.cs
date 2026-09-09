@@ -87,7 +87,7 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
 
     [Header("Overall Score Trend Chart")]
     public LineChart overallScoreTrendChart;
-    public float overallScoreSampleInterval = 10f;
+    public float overallScoreSampleInterval = 5f;
 
     private float elapsedTime;
     private bool testRunning;
@@ -213,6 +213,9 @@ public class CoordinationPerformanceScoreCalculation : MonoBehaviour
     // TRACK POST-DISTURBANCE MAXIMUM DEVIATION
     // ============================================================
 
+    public void setMaximumRecoveryTime(float time) {
+        maximumRecoveryTime = time;
+    }
     void TrackPostDisturbanceDeviation(
         float distance
     )
@@ -709,6 +712,9 @@ void RecordRecoveryGraphData(
         overallScoreTrendScores.Add(
             OverallCoordinationScore
         );
+
+        if(overallScoreTrendTimes.Count <= 1)
+            return;
 
         if (overallScoreTrendChart != null)
         {
